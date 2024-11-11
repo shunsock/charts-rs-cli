@@ -1,0 +1,24 @@
+version: '3'
+
+tasks:
+  prepare:
+    cmds:
+      - cargo check
+      - cargo fmt
+      - cargo clippy
+      - cargo build
+      - cargo test
+
+  e2e:
+    cmds:
+      - cargo build
+      - ./target/debug/charts -n bar -p examples/bar.json
+      - ./target/debug/charts -n scatter -p examples/scatter.json
+
+  install:
+    cmds:
+      - cargo install --path .
+
+  uninstall:
+    cmds:
+      - cargo uninstall

@@ -1,0 +1,47 @@
+{
+  "font_family": "Roboto",
+  "height": 400,
+  "legend_align": "left",
+  "series_list": [
+    {
+      "name": "Email",
+      "label_show": true,
+      "data": [
+        120,
+        132,
+        101,
+        134,
+        90,
+        230,
+        210
+      ]
+    },
+    {
+      "name": "Union Ads",
+      "label_show": true,
+      "data": [
+        220,
+        182,
+        191,
+        234,
+        290,
+        330,
+        310
+      ]
+    }
+  ],
+  "sub_title_text": "Sub Title",
+  "theme": "grafana",
+  "title_text": "Bar Chart",
+  "type": "bar",
+  "width": 600,
+  "x_axis_data": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ]
+}
