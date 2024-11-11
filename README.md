@@ -1,4 +1,4 @@
-# charts-cli
+# charts-rs-cli
 
 ## Description
 
