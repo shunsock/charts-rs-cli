@@ -25,7 +25,6 @@ impl Validator {
             return Err("inline-jsonとfile-jsonは同時に指定できません".into());
         }
 
-        // chart_nameはClapで必須項目にしているのでunwrapできる
         let chart_name = self.user_input.chart_name.unwrap();
 
         let json_strings = if self.user_input.inline_json.is_some() {
@@ -42,5 +41,125 @@ impl Validator {
             .map_err(|_| "JSONのパースに失敗しました。正しいJSON形式か確認してください")?;
 
         Ok(ValidateUserInput { chart_name, json })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::fs;
+    use std::io::Write;
+
+    #[test]
+    fn test_chart_name_is_none() {
+        let user_input = UserInput {
+            chart_name: None,
+            inline_json: Some("{}".to_string()),
+            file_json: None,
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "チャート名が指定されていません"
+        );
+    }
+
+    #[test]
+    fn test_both_json_sources_are_none() {
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: None,
+            file_json: None,
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert_eq!(result.unwrap_err().to_string(), "JSONが指定されていません");
+    }
+
+    #[test]
+    fn test_both_json_sources_are_some() {
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: Some("{}".to_string()),
+            file_json: Some("test.json".to_string()),
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "inline-jsonとfile-jsonは同時に指定できません"
+        );
+    }
+
+    #[test]
+    fn test_file_json_not_found() {
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: None,
+            file_json: Some("non_existent.json".to_string()),
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "ファイルの読み込みに失敗しました"
+        );
+    }
+
+    #[test]
+    fn test_invalid_json() {
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: Some("{invalid_json}".to_string()),
+            file_json: None,
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "JSONのパースに失敗しました。正しいJSON形式か確認してください"
+        );
+    }
+
+    #[test]
+    fn test_valid_input_with_inline_json() {
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: Some(r#"{"key": "value"}"#.to_string()),
+            file_json: None,
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert!(result.is_ok());
+
+        let validated_input = result.unwrap();
+        assert_eq!(validated_input.chart_name, "Test Chart");
+        assert_eq!(validated_input.json, json!({"key": "value"}));
+    }
+
+    #[test]
+    fn test_valid_input_with_file_json() {
+        // テスト用ファイルの作成
+        let file_path = "test_valid.json";
+        let mut file = fs::File::create(file_path).unwrap();
+        writeln!(file, r#"{{"key": "value"}}"#).unwrap();
+
+        let user_input = UserInput {
+            chart_name: Some("Test Chart".to_string()),
+            inline_json: None,
+            file_json: Some(file_path.to_string()),
+        };
+        let validator = Validator::new(user_input);
+        let result = validator.validate();
+        assert!(result.is_ok());
+
+        let validated_input = result.unwrap();
+        assert_eq!(validated_input.chart_name, "Test Chart");
+        assert_eq!(validated_input.json, json!({"key": "value"}));
+
+        // テスト用ファイルの削除
+        fs::remove_file(file_path).unwrap();
     }
 }
